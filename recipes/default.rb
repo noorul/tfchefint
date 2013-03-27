@@ -17,16 +17,16 @@
 # limitations under the License.
 #
 
-sf-admin-dot-chef = node['tfchefint']['sf-admin-home'] + ::File::Separator + '.chef'
+dotchef = node['tfchefint']['sf-admin-home'] + ::File::Separator + '.chef'
 
-directory sf-admin-dot-chef do
+directory dotchef do
   owner "sf-admin"
   group "sf-admin"
   mode  00700
   action :create
 end
 
-template "#{sf-admin-dot-chef}/knife.rb" do
+template "#{dotchef}/knife.rb" do
   source "knife.rb.erb"
   owner "sf-admin"
   group "sf-admin"
@@ -34,6 +34,6 @@ template "#{sf-admin-dot-chef}/knife.rb" do
   action :create
 end
 
-unless ::File.exists?(sf-admin-dot-chef + 'sf-admin.pem') then
-  Chef::Log.warn("Remember to put sf-admin.pem into " + sf-admin-dot-chef)
+unless ::File.exists?(dotchef + ::File::Separator + 'sf-admin.pem') then
+  Chef::Log.warn("Remember to put sf-admin.pem into " + dotchef)
 end
