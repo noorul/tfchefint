@@ -1,0 +1,105 @@
+#!/usr/bin/env ruby
+
+#
+# teamforge_event_handler.rb
+#
+# Author:: Julian Dunn (<jdunn@opscode.com>)
+#
+# Copyright 2013, Opscode, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+require 'syslog'
+require 'rubygems'
+require 'chef/config'
+require 'chef/log'
+require 'chef/rest'
+require 'chef/data_bag_item'
+# Not sure I need this if I can invoke knife ssh programmatically
+# require 'mixlib-shellout'
+
+if RUBY_VERSION < "1.9"
+  print "Ruby 1.9.x is required to use this script. Please use the Ruby that comes with Chef."
+  exit 1
+end
+
+# Begin global variables
+bagname = '<%= @bagname %>'
+target_env_field = 'Deploy To'
+frsid_field = 'FRSID'
+appname_field = 'Application Shortname'
+# End global variables
+
+syslog = Syslog.open($0, Syslog::LOG_PID, Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
+
+tf_vars = ENV.to_hash.select { |k,v| k =~ /^tf_/ }
+tf_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_name_/ }
+
+# Find the corresponding values for the vars of interest;
+# We're looking for the index of the flex fields named:
+#
+# "Deploy To" -- which we set as 'target_env'
+# "FRSID" -- which we set as 'frsid'
+# "Application Shortname" -- which we set as 'appname'
+
+target_env, frsid, appname = nil
+
+tf_flex_field_vars.each do |k, v|
+  v == target_env_field && target_env = tf_flex_field_vars[k.sub(/name/, 'value')]
+  v == frsid_field && frsid = tf_flex_field_vars[k.sub(/name/, 'value')]
+  v == appname_field && appname = tf_flex_field_vars[k.sub(/name/, 'value')]
+end
+
+if (target_env.nil? || frsid.nil? || appname.nil?) then
+  syslog.crit("Required fields not defined in tracker; can't proceed")
+  exit 1
+end
+
+# Make sure data bag exists
+begin
+  bag = Chef::DataBag.load(bagname)
+rescue HTTPServerException => e
+  if e.response.code == "404" then
+    bag = Chef::DataBag.new
+    bag.name(bagname)
+    bag.save
+  else
+    syslog.crit("Received an HTTPException of type " + e.response.code)
+    raise
+  end
+end
+
+# Load data bag item, or create it if it doesn't exist yet
+begin
+  item = Chef::DataBagItem.load(bagname, appname)
+rescue HTTPServerException => e
+  if e.response.code == "404" then
+    item = Chef::DataBagItem.new(bagname, appname)
+    item.data_bag(bagname)
+    item['id'] = appname
+  else
+    syslog.crit("Received an HTTPException of type " + e.response.code)
+    raise
+  end
+end
+
+item[target_env].nil? && item[target_env] = Hash.new
+item[target_env]["frsid"] = new_frsid
+item.save
+
+# Exec knife to log into remotes
+#knifecmd = Mixlib::ShellOut.new("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' 'sudo chef-client --once'")
+#knifecmd.run_command
+# Or even better
+#Chef::Knife.run('something', 'blah')

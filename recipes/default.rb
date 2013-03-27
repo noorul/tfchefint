@@ -16,24 +16,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-dotchef = node['tfchefint']['sf-admin-home'] + ::File::Separator + '.chef'
-
-directory dotchef do
-  owner "sf-admin"
-  group "sf-admin"
-  mode  00700
-  action :create
-end
-
-template "#{dotchef}/knife.rb" do
-  source "knife.rb.erb"
-  owner "sf-admin"
-  group "sf-admin"
-  mode  00600
-  action :create
-end
-
-unless ::File.exists?(dotchef + ::File::Separator + 'sf-admin.pem') then
-  Chef::Log.warn("Remember to put sf-admin.pem into " + dotchef)
-end

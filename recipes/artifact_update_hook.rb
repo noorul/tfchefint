@@ -1,7 +1,6 @@
 #
-# Author:: Julian C. Dunn (<jdunn@opscode.com>)
 # Cookbook Name:: tfchefint
-# Attributes:: default
+# Recipe:: artifact_update_hook
 #
 # Copyright 2013, Opscode, Inc.
 #
@@ -9,15 +8,24 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-default['tfchefint']['chefauth']['sf-admin-home'] = '/opt/collabnet/teamforge/var/home/sf-admin'
-default['tfchefint']['chefauth']['chef-server-url'] = Chef::Config[:chef_server_url]
+include_recipe "tfchefint::hooks"
 
-default['tfchefint']['artifact_update_hook']['app_bag_name'] = 'apps'
+template "/opt/collabnet/teamforge/hooks/asynchronous/artifact_update" do
+  source "artifact_update.erb"
+  variables(
+    :bagname => node['tfchefint']['artifact_update_hook']['app_bag_name']
+  )
+  owner "sf-admin"
+  group "sf-admin"
+  mode  00755
+  action :create
+end

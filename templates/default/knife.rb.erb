@@ -5,4 +5,4 @@ log_level                :info
 log_location             STDOUT
 node_name                "sf-admin"
 client_key               "#{current_dir}/sf-admin.pem"
-chef_server_url          "<%= node['tfchefint']['chef-server-url'] %>"
+chef_server_url          "<%= node['tfchefint']['chefauth']['chef-server-url'] %>"
