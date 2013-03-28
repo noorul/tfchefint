@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 #
-# teamforge_event_handler.rb
+# artifact_update.rb
 #
 # Author:: Julian Dunn (<jdunn@opscode.com>)
 #
@@ -46,8 +46,13 @@ syslog = Syslog.open($0, Syslog::LOG_PID, Syslog::LOG_DAEMON | Syslog::LOG_LOCAL
 tf_vars = ENV.to_hash.select { |k,v| k =~ /^tf_/ }
 tf_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_name_/ }
 
+unless tf_vars['tf_updated_Path'] =~ /deployment_tracker/ then
+  syslog.debug("Exiting early because the artifact being updated is not a deployment tracker artifact")
+  exit 0
+end
+
 # Find the corresponding values for the vars of interest;
-# We're looking for the index of the flex fields named:
+# We're looking for the value of the flex fields named:
 #
 # "Deploy To" -- which we set as 'target_env'
 # "FRSID" -- which we set as 'frsid'
@@ -71,6 +76,7 @@ begin
   bag = Chef::DataBag.load(bagname)
 rescue HTTPServerException => e
   if e.response.code == "404" then
+    syslog.debug("Creating a new data bag named " + bagname)
     bag = Chef::DataBag.new
     bag.name(bagname)
     bag.save
@@ -85,6 +91,7 @@ begin
   item = Chef::DataBagItem.load(bagname, appname)
 rescue HTTPServerException => e
   if e.response.code == "404" then
+    syslog.debug("Creating a new data bag item named " + appname + " in data bag " + bagname)
     item = Chef::DataBagItem.new(bagname, appname)
     item.data_bag(bagname)
     item['id'] = appname
