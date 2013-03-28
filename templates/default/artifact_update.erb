@@ -20,11 +20,13 @@
 # limitations under the License.
 #
 
+require 'net/http'
 require 'syslog'
 require 'rubygems'
 require 'chef/config'
 require 'chef/log'
 require 'chef/rest'
+require 'chef/data_bag'
 require 'chef/data_bag_item'
 # Not sure I need this if I can invoke knife ssh programmatically
 # require 'mixlib-shellout'
@@ -34,6 +36,11 @@ if RUBY_VERSION < "1.9"
   exit 1
 end
 
+# Minimal Chef config needed to interact with API w/o reading knife.rb
+Chef::Config[:node_name] = ENV['USER']
+Chef::Config[:client_key] = File.join(ENV['HOME'], '.chef', "#{ENV['USER']}.pem")
+Chef::Config[:chef_server_url] = "<%= Chef::Config[:chef_server_url] %>"
+
 # Begin global variables
 bagname = '<%= @bagname %>'
 target_env_field = 'Deploy To'
@@ -41,10 +48,10 @@ frsid_field = 'FRSID'
 appname_field = 'Application Shortname'
 # End global variables
 
-syslog = Syslog.open($0, Syslog::LOG_PID, Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
+syslog = Syslog.open(::File::basename($0), Syslog::LOG_PID, Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
 
 tf_vars = ENV.to_hash.select { |k,v| k =~ /^tf_/ }
-tf_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_name_/ }
+tf_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_/ }
 
 unless tf_vars['tf_updated_Path'] =~ /deployment_tracker/ then
   syslog.debug("Exiting early because the artifact being updated is not a deployment tracker artifact")
@@ -61,9 +68,18 @@ end
 target_env, frsid, appname = nil
 
 tf_flex_field_vars.each do |k, v|
-  v == target_env_field && target_env = tf_flex_field_vars[k.sub(/name/, 'value')]
-  v == frsid_field && frsid = tf_flex_field_vars[k.sub(/name/, 'value')]
-  v == appname_field && appname = tf_flex_field_vars[k.sub(/name/, 'value')]
+  if v == target_env_field then
+    target_env = tf_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("target_env set to " + target_env)
+  end
+  if v == frsid_field then
+    frsid = tf_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("frsid set to " + frsid)
+  end
+  if v == appname_field then
+    appname = tf_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("appname set to " + appname)
+  end
 end
 
 if (target_env.nil? || frsid.nil? || appname.nil?) then
@@ -74,7 +90,7 @@ end
 # Make sure data bag exists
 begin
   bag = Chef::DataBag.load(bagname)
-rescue HTTPServerException => e
+rescue Net::HTTPServerException => e
   if e.response.code == "404" then
     syslog.debug("Creating a new data bag named " + bagname)
     bag = Chef::DataBag.new
@@ -89,10 +105,10 @@ end
 # Load data bag item, or create it if it doesn't exist yet
 begin
   item = Chef::DataBagItem.load(bagname, appname)
-rescue HTTPServerException => e
+rescue Net::HTTPServerException => e
   if e.response.code == "404" then
     syslog.debug("Creating a new data bag item named " + appname + " in data bag " + bagname)
-    item = Chef::DataBagItem.new(bagname, appname)
+    item = Chef::DataBagItem.new
     item.data_bag(bagname)
     item['id'] = appname
   else
@@ -102,7 +118,7 @@ rescue HTTPServerException => e
 end
 
 item[target_env].nil? && item[target_env] = Hash.new
-item[target_env]["frsid"] = new_frsid
+item[target_env]["frsid"] = frsid
 item.save
 
 # Exec knife to log into remotes
