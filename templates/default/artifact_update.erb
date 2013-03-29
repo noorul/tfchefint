@@ -28,18 +28,17 @@ require 'chef/log'
 require 'chef/rest'
 require 'chef/data_bag'
 require 'chef/data_bag_item'
-# Not sure I need this if I can invoke knife ssh programmatically
-# require 'mixlib-shellout'
+require 'chef/mixin/shell_out'
+
+include Chef::Mixin::ShellOut
 
 if RUBY_VERSION < "1.9"
   print "Ruby 1.9.x is required to use this script. Please use the Ruby that comes with Chef."
   exit 1
 end
 
-# Minimal Chef config needed to interact with API w/o reading knife.rb
-Chef::Config[:node_name] = ENV['USER']
-Chef::Config[:client_key] = File.join(ENV['HOME'], '.chef', "#{ENV['USER']}.pem")
-Chef::Config[:chef_server_url] = "<%= Chef::Config[:chef_server_url] %>"
+# Use the same config as knife uses
+Chef::Config.from_file(File.join(ENV['HOME'], '.chef', 'knife.rb'))
 
 # Begin global variables
 bagname = '<%= @bagname %>'
@@ -121,8 +120,5 @@ item[target_env].nil? && item[target_env] = Hash.new
 item[target_env]["frsid"] = frsid
 item.save
 
-# Exec knife to log into remotes
-#knifecmd = Mixlib::ShellOut.new("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' 'sudo chef-client --once'")
-#knifecmd.run_command
-# Or even better
-#Chef::Knife.run('something', 'blah')
+# Exec knife to log into remotes and run Chef once
+shell_out!("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' 'sudo chef-client --once'")
