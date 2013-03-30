@@ -23,6 +23,6 @@ chefclient = (!node['chef_client'].nil? && !node['chef_client']['bin'].nil?) ? n
 sudo 'sf-admin' do
   user      'sf-admin'
   runas     'root'
-  commands  [ "#{chefclient} --once" ]
+  commands  [ "#{chefclient} --once", '/usr/bin/pkill -USR1 chef-client' ]
   nopasswd  true
 end
