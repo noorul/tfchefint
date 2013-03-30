@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: tfchefint
-# Recipe:: default
+# Recipe:: sudoers
 # Author:: Julian C. Dunn (<jdunn@opscode.com>)
 #
 # Copyright 2013, Opscode, Inc.
@@ -17,3 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+chefclient = (!node['chef_client'].nil? && !node['chef_client']['bin'].nil?) ? node['chef_client']['bin'] : '/usr/bin/chef-client'
+
+sudo 'sf-admin' do
+  user      'sf-admin'
+  runas     'root'
+  commands  [ "#{chefclient} --once" ]
+  nopasswd  true
+end

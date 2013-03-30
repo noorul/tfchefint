@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: tfchefint
-# Recipe:: default
+# Recipe:: server
 # Author:: Julian C. Dunn (<jdunn@opscode.com>)
 #
 # Copyright 2013, Opscode, Inc.
@@ -17,3 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+include_recipe 'tfchefint::hooks'
+include_recipe 'tfchefint::artifact_update_hook'
+include_recipe 'tfchefint::chefauth'

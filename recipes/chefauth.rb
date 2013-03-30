@@ -1,6 +1,7 @@
 #
 # Cookbook Name:: tfchefint
 # Recipe:: chefauth
+# Author:: Julian C. Dunn (<jdunn@opscode.com>)
 #
 # Copyright 2013, Opscode, Inc.
 #
@@ -17,7 +18,20 @@
 # limitations under the License.
 #
 
-dotchef = node['tfchefint']['chefauth']['sf-admin-home'] + ::File::Separator + '.chef'
+execute "generate-sfadmin-keypair" do
+  command "ssh-keygen -q -f ~/.ssh/id_rsa -N ''"
+  user 'sf-admin'
+  not_if { ::File.exists?(::File.expand_path('~sf-admin/.ssh/id_rsa')) }
+  action :run
+  notifies :write, "log[remind-user-to-put-public-key-in-databag]"
+end
+
+log "remind-user-to-put-public-key-in-databag" do
+  message "Generated keypair for sf-admin. Remember to put the public key in the databag item users::sf-admin!"
+  action :nothing
+end
+
+dotchef = ::File.join(node['tfchefint']['chefauth']['sf-admin-home'], '.chef') 
 
 directory dotchef do
   owner "sf-admin"
@@ -34,6 +48,7 @@ template "#{dotchef}/knife.rb" do
   action :create
 end
 
-unless ::File.exists?(dotchef + ::File::Separator + 'sf-admin.pem') then
-  Chef::Log.warn("Remember to put sf-admin.pem into " + dotchef)
+log "remind-user-to-put-pem-in-dotchef" do
+  message "Remember to put sf-admin.pem into #{dotchef}"
+  not_if { ::File.exists?(::File.join(dotchef, 'sf-admin.pem')) }
 end
