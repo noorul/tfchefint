@@ -76,6 +76,8 @@ sudoers
 
 Sets up sudoers on client machines so that 'sf-admin' can run Chef client.
 
+Note: The sf-admin user needs to be able to run the commands in this recipe without requiring a TTY. You can set this up in your main sudoers file if necessary (e.g. using Opscode's sudo cookbook), or if you're running OpenSSH >= 5.9, the RequestTTY option can be used in the host's ssh_options to always force the creation of a TTY.
+
 user
 ----
 
