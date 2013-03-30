@@ -1,6 +1,6 @@
 #
 # Cookbook Name:: tfchefint
-# Recipe:: default
+# Recipe:: client
 # Author:: Julian C. Dunn (<jdunn@opscode.com>)
 #
 # Copyright 2013, Opscode, Inc.
