@@ -121,4 +121,4 @@ item[target_env]["frsid"] = frsid
 item.save
 
 # Exec knife to log into remotes and run Chef once
-shell_out!("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' 'sudo chef-client --once'")
+shell_out!("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' '[ -e /var/run/chef/client.pid ] && sudo /usr/bin/pkill -USR1 chef-client || sudo /usr/bin/chef-client --once'")
