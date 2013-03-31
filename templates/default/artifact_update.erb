@@ -70,15 +70,15 @@ original_target_env, original_frsid, original_appname, updated_target_env, updat
 tf_original_flex_field_vars.each do |k, v|
   if v == target_env_field then
     original_target_env = tf_original_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("original target_env set to " + target_env)
+    syslog.debug("original target_env set to " + original_target_env)
   end
   if v == frsid_field then
     original_frsid = tf_original_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("original frsid set to " + frsid)
+    syslog.debug("original frsid set to " + original_frsid)
   end
   if v == appname_field then
     original_appname = tf_original_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("original appname set to " + appname)
+    syslog.debug("original appname set to " + original_appname)
   end
 end
 
@@ -90,15 +90,15 @@ end
 tf_updated_flex_field_vars.each do |k, v|
   if v == target_env_field then
     updated_target_env = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("updated target_env set to " + target_env)
+    syslog.debug("updated target_env set to " + updated_target_env)
   end
   if v == frsid_field then
     updated_frsid = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("updated frsid set to " + frsid)
+    syslog.debug("updated frsid set to " + updated_frsid)
   end
   if v == appname_field then
     updated_appname = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("updated appname set to " + appname)
+    syslog.debug("updated appname set to " + updated_appname)
   end
 end
 
@@ -147,4 +147,4 @@ item[updated_target_env]["frsid"] = updated_frsid
 item.save
 
 # Exec knife to log into remotes and run Chef once
-shell_out!("knife ssh 'chef_environment:#{target_env} AND roles:app_#{appname}' '[ -e /var/run/chef/client.pid ] && sudo /usr/bin/pkill -USR1 chef-client || sudo /usr/bin/chef-client --once'")
+shell_out!("knife ssh 'chef_environment:#{updated_target_env} AND roles:app_#{updated_appname}' '[ -e /var/run/chef/client.pid ] && sudo /usr/bin/pkill -USR1 chef-client || sudo /usr/bin/chef-client --once'")
