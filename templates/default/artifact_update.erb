@@ -83,7 +83,7 @@ tf_original_flex_field_vars.each do |k, v|
 end
 
 if (original_target_env.nil? || original_frsid.nil? || original_appname.nil?) then
-  syslog.crit("Required updated fields not defined in tracker; can't proceed")
+  syslog.crit("Required original fields not defined in tracker; can't proceed")
   exit 1
 end
 
