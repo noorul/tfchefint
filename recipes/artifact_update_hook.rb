@@ -23,7 +23,10 @@ include_recipe "tfchefint::hooks"
 template "/opt/collabnet/teamforge/hooks/asynchronous/artifact_update" do
   source "artifact_update.erb"
   variables(
-    :bagname => node['tfchefint']['artifact_update_hook']['app_bag_name']
+    :bagname => node['tfchefint']['artifact_update_hook']['app_bag_name'],
+    :target_env_field => node['tfchefint']['artifact_update_hook']['target_env_field'],
+    :frsid_field => node['tfchefint']['artifact_update_hook']['frsid_field'],
+    :appname_field => node['tfchefint']['artifact_update_hook']['appname_field']
   )
   owner "sf-admin"
   group "sf-admin"

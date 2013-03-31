@@ -42,15 +42,16 @@ Chef::Config.from_file(File.join(ENV['HOME'], '.chef', 'knife.rb'))
 
 # Begin global variables
 bagname = '<%= @bagname %>'
-target_env_field = 'Deploy To'
-frsid_field = 'FRSID'
-appname_field = 'Application Shortname'
+target_env_field = '<%= @target_env_field %>'
+frsid_field = '<%= @frsid_field %>'
+appname_field = '<%= @appname_field %>'
 # End global variables
 
 syslog = Syslog.open(::File::basename($0), Syslog::LOG_PID, Syslog::LOG_DAEMON | Syslog::LOG_LOCAL3)
 
 tf_vars = ENV.to_hash.select { |k,v| k =~ /^tf_/ }
-tf_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_/ }
+tf_original_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_original_flex_field_/ }
+tf_updated_flex_field_vars = tf_vars.select { |k,v| k=~ /^tf_updated_flex_field_/ }
 
 unless tf_vars['tf_updated_Path'] =~ /deployment_tracker/ then
   syslog.debug("Exiting early because the artifact being updated is not a deployment tracker artifact")
@@ -64,26 +65,51 @@ end
 # "FRSID" -- which we set as 'frsid'
 # "Application Shortname" -- which we set as 'appname'
 
-target_env, frsid, appname = nil
+original_target_env, original_frsid, original_appname, updated_target_env, updated_frsid, updated_appname = nil
 
-tf_flex_field_vars.each do |k, v|
+tf_original_flex_field_vars.each do |k, v|
   if v == target_env_field then
-    target_env = tf_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("target_env set to " + target_env)
+    original_target_env = tf_original_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("original target_env set to " + target_env)
   end
   if v == frsid_field then
-    frsid = tf_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("frsid set to " + frsid)
+    original_frsid = tf_original_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("original frsid set to " + frsid)
   end
   if v == appname_field then
-    appname = tf_flex_field_vars[k.sub(/name/, 'value')]
-    syslog.debug("appname set to " + appname)
+    original_appname = tf_original_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("original appname set to " + appname)
   end
 end
 
-if (target_env.nil? || frsid.nil? || appname.nil?) then
-  syslog.crit("Required fields not defined in tracker; can't proceed")
+if (original_target_env.nil? || original_frsid.nil? || original_appname.nil?) then
+  syslog.crit("Required updated fields not defined in tracker; can't proceed")
   exit 1
+end
+
+tf_updated_flex_field_vars.each do |k, v|
+  if v == target_env_field then
+    updated_target_env = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("updated target_env set to " + target_env)
+  end
+  if v == frsid_field then
+    updated_frsid = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("updated frsid set to " + frsid)
+  end
+  if v == appname_field then
+    updated_appname = tf_updated_flex_field_vars[k.sub(/name/, 'value')]
+    syslog.debug("updated appname set to " + appname)
+  end
+end
+
+if (updated_target_env.nil? || updated_frsid.nil? || updated_appname.nil?) then
+  syslog.crit("Required updated fields not defined in tracker; can't proceed")
+  exit 1
+end
+
+if (original_target_env == updated_target_env) && (original_frsid == updated_frsid) && (original_appname == updated_appname) then
+  syslog.debug("No fields of interest changed; exiting")
+  exit 0
 end
 
 # Make sure data bag exists
@@ -103,21 +129,21 @@ end
 
 # Load data bag item, or create it if it doesn't exist yet
 begin
-  item = Chef::DataBagItem.load(bagname, appname)
+  item = Chef::DataBagItem.load(bagname, updated_appname)
 rescue Net::HTTPServerException => e
   if e.response.code == "404" then
-    syslog.debug("Creating a new data bag item named " + appname + " in data bag " + bagname)
+    syslog.debug("Creating a new data bag item named " + updated_appname + " in data bag " + bagname)
     item = Chef::DataBagItem.new
     item.data_bag(bagname)
-    item['id'] = appname
+    item['id'] = updated_appname
   else
     syslog.crit("Received an HTTPException of type " + e.response.code)
     raise
   end
 end
 
-item[target_env].nil? && item[target_env] = Hash.new
-item[target_env]["frsid"] = frsid
+item[updated_target_env].nil? && item[updated_target_env] = Hash.new
+item[updated_target_env]["frsid"] = updated_frsid
 item.save
 
 # Exec knife to log into remotes and run Chef once
