@@ -76,6 +76,8 @@ Installs the Java-to-arbitrary-language bridge, `hooks.jar`, on the TeamForge se
 
 While `hooks.jar` is not officially supported by CollabNet, some directions on its design can be found on CollabNet's blog: http://blogs.collab.net/teamforge/custom-workflow-in-teamforge-a-guide-to-iaf-event-handlers
 
+A version of `hooks.jar` that supports passing flex field data as environment variables is included. It was retrieved from here: http://forums.open.collab.net/ds/viewMessage.do?dsForumId=738&dsMessageId=486169
+
 sudoers
 -------
 
