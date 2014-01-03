@@ -1,8 +1,10 @@
 #
 # Cookbook Name:: tfchefint
 # Recipe:: artifact_update_hook
-# Author:: Julian C. Dunn (<jdunn@opscode.com>)
+# Authors:: Julian C. Dunn (<jdunn@opscode.com>)
+#           CollabNet, Inc. (<dev-devops@forge.collab.net>)
 #
+# Copyright 2014, CollabNet, Inc.
 # Copyright 2013, Opscode, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,16 +22,22 @@
 
 include_recipe "tfchefint::hooks"
 
-template "/opt/collabnet/teamforge/hooks/asynchronous/artifact_update" do
-  source "artifact_update.erb"
-  variables(
-    :bagname => node['tfchefint']['artifact_update_hook']['app_bag_name'],
-    :target_env_field => node['tfchefint']['artifact_update_hook']['target_env_field'],
-    :frsid_field => node['tfchefint']['artifact_update_hook']['frsid_field'],
-    :appname_field => node['tfchefint']['artifact_update_hook']['appname_field']
-  )
+CTF_HOOKS_ASYNC_DIR = '/opt/collabnet/teamforge/hooks/asynchronous'
+
+directory CTF_HOOKS_ASYNC_DIR do
   owner "sf-admin"
   group "sf-admin"
   mode  00755
+  recursive true
   action :create
+end
+
+%w{artifact_update artifact_update.rb}.each do |script|
+  template "/opt/collabnet/teamforge/hooks/asynchronous/#{script}" do
+    source "#{script}.erb"
+    owner "sf-admin"
+    group "sf-admin"
+    mode  00755
+    action :create
+  end
 end

@@ -1,8 +1,10 @@
 #
-# Author:: Julian C. Dunn (<jdunn@opscode.com>)
+# Authors:: Julian C. Dunn (<jdunn@opscode.com>)
+#           CollabNet, Inc. (<dev-devops@forge.collab.net>)
 # Cookbook Name:: tfchefint
 # Attributes:: default
 #
+# Copyright 2014, CollabNet, Inc.
 # Copyright 2013, Opscode, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +21,3 @@
 
 default['tfchefint']['chefauth']['sf-admin-home'] = '/opt/collabnet/teamforge/var/home/sf-admin'
 default['tfchefint']['chefauth']['chef-server-url'] = Chef::Config[:chef_server_url]
-
-default['tfchefint']['artifact_update_hook']['app_bag_name'] = 'apps'
-default['tfchefint']['artifact_update_hook']['target_env_field'] = 'Deploy To'
-default['tfchefint']['artifact_update_hook']['frsid_field'] = 'FRSID'
-default['tfchefint']['artifact_update_hook']['appname_field'] = 'Application Shortname'
