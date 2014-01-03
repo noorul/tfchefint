@@ -1,11 +1,9 @@
 #
 # Cookbook Name:: tfchefint
-# Recipe:: server
-# Authors:: Julian C. Dunn (<jdunn@opscode.com>)
-#           CollabNet, Inc. (<dev-devops@forge.collab.net>)
+# Recipe:: knife_set_attribute
+# Author:: CollabNet, Inc. (<dev-devops@forge.collab.net>)
 #
 # Copyright 2014, CollabNet, Inc.
-# Copyright 2013, Opscode, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +18,21 @@
 # limitations under the License.
 #
 
-include_recipe 'tfchefint::hooks'
-include_recipe 'tfchefint::artifact_update_hook'
-include_recipe 'tfchefint::chefauth'
-include_recipe 'tfchefint::knife_set_attribute'
+include_recipe "tfchefint::chefauth"
+
+KNIFE_PLUGINS_DIR = ::File.join(node['tfchefint']['chefauth']['sf-admin-home'], '.chef', 'plugins', 'knife')
+
+directory KNIFE_PLUGINS_DIR do
+  owner "sf-admin"
+  group "sf-admin"
+  mode  00700
+  recursive true
+  action :create
+end
+
+git KNIFE_PLUGINS_DIR do
+  repository 'https://github.com/amian84/knife-set-attribute.git'
+  user 'sf-admin'
+  group 'sf-admin'
+  action :export
+end
