@@ -1,8 +1,10 @@
 #
 # Cookbook Name:: tfchefint
 # Recipe:: chefauth
-# Author:: Julian C. Dunn (<jdunn@opscode.com>)
+# Authors:: Julian C. Dunn (<jdunn@opscode.com>)
+#           CollabNet, Inc. (<dev-devops@forge.collab.net>)
 #
+# Copyright 2014, CollabNet, Inc.
 # Copyright 2013, Opscode, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,10 +20,12 @@
 # limitations under the License.
 #
 
+sf_admin_home = node['tfchefint']['chefauth']['sf-admin-home']
+
 execute "generate-sfadmin-keypair" do
-  command "ssh-keygen -q -f ~/.ssh/id_rsa -N ''"
+  command "ssh-keygen -q -f #{sf_admin_home}/.ssh/id_rsa -N ''"
   user 'sf-admin'
-  not_if { ::File.exists?(::File.expand_path('~sf-admin/.ssh/id_rsa')) }
+  not_if { ::File.exists?("#{sf_admin_home}/.ssh/id_rsa") }
   action :run
   notifies :write, "log[remind-user-to-put-public-key-in-databag]"
 end
@@ -31,7 +35,7 @@ log "remind-user-to-put-public-key-in-databag" do
   action :nothing
 end
 
-dotchef = ::File.join(node['tfchefint']['chefauth']['sf-admin-home'], '.chef') 
+dotchef = ::File.join(sf_admin_home, '.chef')
 
 directory dotchef do
   owner "sf-admin"
